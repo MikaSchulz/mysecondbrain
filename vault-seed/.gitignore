@@ -1,0 +1,16 @@
+# Secrets / transient — NIE committen
+.env
+.cache/
+.last_out
+.last_run
+.seen
+.cost-*
+
+# Generierte Outputs (aus tasks.md/wiki ableitbar)
+out/events/
+
+# OS-Kram
+.DS_Store
+
+# Hinweis: Binär-Rohdaten (raw/audio, raw/pdf, processed/) DÜRFEN ins git
+# (klein, Rückführbarkeit). Bei Bedarf hier ausschließen.

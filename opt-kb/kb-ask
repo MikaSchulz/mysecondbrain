@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# kb-ask "<frage>" — on-demand Query gegen den Second Brain (über index.md). Nutzt Abo-Pool.
+set -euo pipefail
+export TZ="${TZ:-Europe/Berlin}"
+source /opt/kb/.env 2>/dev/null || true
+unset ANTHROPIC_API_KEY
+VAULT="${VAULT:-/opt/kb/vault}"
+q="$*"
+[ -z "$q" ] && { echo "usage: kb-ask <frage>"; exit 1; }
+cd "$VAULT"
+ans=$(claude -p "Beantworte aus dem Second Brain. Lies zuerst index.md, finde relevante wiki/-Seiten via Grep, antworte knapp mit Quellenangabe (wiki-Pfad). Schreibe NICHTS. Frage: $q" \
+  --model "${KB_MODEL:-haiku}" --add-dir wiki 2>/dev/null)
+echo "$ans"
+# optional: mit  kb-ask -n <frage>  zusätzlich als ntfy-Push
+if [ "${1:-}" = "-n" ]; then
+  curl -sf -H "Authorization: Bearer ${NTFY_TOKEN:-}" -d "$ans" "${NTFY_URL:-http://localhost:8080}/${NTFY_TOPIC:-kb}" >/dev/null 2>&1 || true
+fi

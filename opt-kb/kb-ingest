@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# kb-ingest — INTERAKTIVE Knowledge-Lane. Startet interaktives `claude` (NICHT -p) -> normale Abo-Limits.
+# Arbeitet knowledge-inbox/ kuratiert ins Wiki ein. Teilt den Lock mit run.sh (kein Race).
+set -euo pipefail
+export TZ="${TZ:-Europe/Berlin}"
+source /opt/kb/.env 2>/dev/null || true
+unset ANTHROPIC_API_KEY
+VAULT="${VAULT:-/opt/kb/vault}"
+cd "$VAULT"
+exec 9>/tmp/kb.lock
+flock -n 9 || { echo "run.sh läuft gerade — kurz warten und erneut versuchen."; exit 1; }
+echo "Interaktive Knowledge-Lane (Abo-Limits). Beenden mit /exit."
+exec claude --add-dir . "Nutze den Skill kb-ingest: arbeite die Quellen aus knowledge-inbox/ gründlich und gut verlinkt ins wiki/ ein, pflege index.md-MOCs, verschiebe Quellen nach knowledge-processed/."

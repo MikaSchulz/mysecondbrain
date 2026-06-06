@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Edit",
+      "Write",
+      "Bash(mv:*)"
+    ],
+    "deny": [
+      "Read(archive/**)",
+      "Read(processed/**)",
+      "Read(knowledge-inbox/**)",
+      "Read(knowledge-processed/**)",
+      "Read(out/**)",
+      "Read(log.md)",
+      "Edit(archive/**)",
+      "Edit(processed/**)",
+      "Edit(out/**)",
+      "Write(archive/**)",
+      "Write(processed/**)",
+      "Write(out/**)",
+      "Write(knowledge-inbox/**)",
+      "Write(knowledge-processed/**)"
+    ]
+  }
+}

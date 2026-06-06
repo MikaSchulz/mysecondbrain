@@ -1,0 +1,11 @@
+{
+  "name": "kb-openwa",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WhatsApp-Capture -> /opt/kb/vault/raw (experimentell, ToS-Risiko)",
+  "main": "listener.js",
+  "scripts": { "start": "node listener.js" },
+  "dependencies": {
+    "@open-wa/wa-automate": "^4.74.0"
+  }
+}

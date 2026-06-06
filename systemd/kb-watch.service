@@ -1,0 +1,16 @@
+[Unit]
+Description=kb watch-raw — inotify auf raw/urgent/ triggert run.sh (near-realtime)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/kb/watch-raw.sh
+Restart=always
+RestartSec=10
+# Bei Bedarf eigenen User setzen (sonst root):
+# User=kb
+# Group=kb
+
+[Install]
+WantedBy=multi-user.target

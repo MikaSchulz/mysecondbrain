@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# kb-doctor — zentraler Status-Check: was ist konfiguriert, was fehlt.
+set -uo pipefail
+KB=/opt/kb; ENVF="$KB/.env"; VAULT="$KB/vault"
+source "$ENVF" 2>/dev/null || true
+ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; }
+no(){ printf '  \033[31m✗\033[0m %s\n' "$1"; }
+wn(){ printf '  \033[33m!\033[0m %s\n' "$1"; }
+
+echo "==== kb-doctor ===="
+
+echo "[Auth / Billing]"
+[ -f "$ENVF" ] && ok ".env vorhanden ($(stat -c %a "$ENVF"))" || no ".env fehlt"
+if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then ok "CLAUDE_CODE_OAUTH_TOKEN gesetzt (Abo)"; else no "CLAUDE_CODE_OAUTH_TOKEN fehlt -> claude setup-token"; fi
+if grep -q '^export ANTHROPIC_API_KEY=' "$ENVF" 2>/dev/null || [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  no "ANTHROPIC_API_KEY GESETZT -> API-Billing-Gefahr! entfernen"; else ok "kein ANTHROPIC_API_KEY (Abo-Billing sicher)"; fi
+command -v claude >/dev/null && ok "claude CLI installiert" || no "claude CLI fehlt"
+[ -f "$KB/.token-installed" ] && ok "Token-Datum: $(cat "$KB/.token-installed") (Renewal-Reminder aktiv)" || wn ".token-installed fehlt (kein Renewal-Reminder)"
+
+echo "[Netzwerk / Tailscale]"
+if command -v tailscale >/dev/null; then
+  if tailscale status >/dev/null 2>&1; then ok "tailscale verbunden ($(tailscale ip -4 2>/dev/null|head -1))"; else no "tailscale nicht verbunden -> tailscale up"; fi
+else no "tailscale nicht installiert"; fi
+
+echo "[Dienste]"
+curl -sf -m4 -u "${RADICALE_USER:-kb}:${RADICALE_PW:-}" "${RADICALE_URL:-http://localhost:5232}/" -o /dev/null 2>/dev/null \
+  && ok "Radicale erreichbar (:5232)" || no "Radicale nicht erreichbar"
+curl -sf -m4 "${NTFY_URL:-http://localhost:8080}/v1/health" -o /dev/null 2>/dev/null \
+  && ok "ntfy erreichbar (:8080)" || no "ntfy nicht erreichbar"
+[ -n "${NTFY_TOKEN:-}" ] && [ "${NTFY_TOKEN}" != "tk_change_me" ] && ok "NTFY_TOKEN gesetzt" || no "NTFY_TOKEN fehlt/Default"
+if [ -n "${WHISPER_BIN:-}" ] && [ -x "${WHISPER_BIN:-/x}" ]; then ok "whisper: $WHISPER_BIN"; else wn "whisper nicht gebaut (Phase 2, Voice deaktiviert)"; fi
+systemctl is-active --quiet syncthing@root 2>/dev/null && ok "Syncthing aktiv" || wn "Syncthing nicht aktiv"
+systemctl is-active --quiet kb-openwa 2>/dev/null && ok "OpenWA aktiv" || wn "OpenWA nicht aktiv (WhatsApp optional)"
+
+echo "[Automation]"
+crontab -l 2>/dev/null | grep -q '/opt/kb/run.sh' && ok "cron run.sh installiert" || no "cron run.sh fehlt -> install.sh"
+systemctl is-active --quiet kb-watch 2>/dev/null && ok "kb-watch (urgent) aktiv" || wn "kb-watch nicht aktiv"
+[ -d "$VAULT/.git" ] && ok "Vault git-Repo" || no "Vault kein git-Repo -> install.sh"
+
+echo "[Kosten]"
+m="$KB/.cost-$(date +%Y-%m)"; sp=$(cat "$m" 2>/dev/null || echo 0)
+echo "  Monats-Verbrauch: \$$sp / Budget \$${MONTH_BUDGET_USD:-18}"
+
+echo "===================="

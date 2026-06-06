@@ -1,0 +1,17 @@
+[Unit]
+Description=kb OpenWA — WhatsApp-Capture -> raw/ (experimentell)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/kb-openwa
+Environment=VAULT=/opt/kb/vault
+Environment=PUPPETEER_SKIP_DOWNLOAD=1
+Environment=CHROME_PATH=/usr/bin/chromium
+ExecStart=/usr/bin/node /opt/kb-openwa/listener.js
+Restart=always
+RestartSec=15
+
+[Install]
+WantedBy=multi-user.target

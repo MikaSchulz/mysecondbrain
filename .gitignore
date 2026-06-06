@@ -1,0 +1,9 @@
+# Repo-Level (Bootstrap selbst) — Build-/Transient-Kram raus
+__pycache__/
+*.pyc
+*.swp
+.DS_Store
+
+# Falls jemand versehentlich echte Secrets hier ablegt:
+opt-kb/.env
+.env
