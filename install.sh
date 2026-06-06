@@ -8,16 +8,22 @@ KB=/opt/kb; VAULT="$KB/vault"
 echo "== kb install =="
 mkdir -p "$KB" "$KB/.cache"
 
-# --- Basis-Pakete + Claude CLI ---
+# --- Basis-Pakete ---
 if command -v apt-get >/dev/null; then
   apt-get update -y
-  apt-get install -y git python3 python3-pip \
-    cron curl jq tesseract-ocr tesseract-ocr-deu poppler-utils ffmpeg restic \
-    inotify-tools nodejs npm ca-certificates tzdata 2>/dev/null || \
+  apt-get install -y git python3 python3-pip cron curl jq gnupg ca-certificates tzdata \
+    tesseract-ocr tesseract-ocr-deu poppler-utils ffmpeg restic inotify-tools 2>/dev/null || \
     echo "WARN: einige Pakete fehlten (später nachinstallieren)"
+  # Node 20 (Claude CLI braucht >=20; Debian-apt liefert nur 18)
+  NODEMAJ=$(node -v 2>/dev/null | sed 's/v\([0-9]*\).*/\1/'); NODEMAJ=${NODEMAJ:-0}
+  if [ "$NODEMAJ" -lt 20 ]; then
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y nodejs \
+      || echo ">> WARN: Node 20 Install fehlgeschlagen"
+  fi
 fi
+# --- Claude CLI ---
 if ! command -v claude >/dev/null; then
-  npm install -g @anthropic-ai/claude-code 2>/dev/null && echo ">> Claude CLI installiert" \
+  npm install -g @anthropic-ai/claude-code && echo ">> Claude CLI installiert" \
     || echo ">> WARN: Claude CLI Install fehlgeschlagen — manuell: npm i -g @anthropic-ai/claude-code"
 fi
 
