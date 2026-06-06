@@ -14,6 +14,7 @@ if command -v apt-get >/dev/null; then
   apt-get install -y git python3 python3-pip cron curl jq gnupg ca-certificates tzdata \
     tesseract-ocr tesseract-ocr-deu poppler-utils ffmpeg restic inotify-tools 2>/dev/null || \
     echo "WARN: einige Pakete fehlten (später nachinstallieren)"
+  update-locale LANG=C.UTF-8 LC_ALL= 2>/dev/null || true   # locale-Warnungen vermeiden
   # Node 20 (Claude CLI braucht >=20; Debian-apt liefert nur 18)
   NODEMAJ=$(node -v 2>/dev/null | sed 's/v\([0-9]*\).*/\1/'); NODEMAJ=${NODEMAJ:-0}
   if [ "$NODEMAJ" -lt 20 ]; then

@@ -72,10 +72,15 @@ cache-file: "/data/ntfy/cache.db"
 attachment-cache-dir: "/data/ntfy/attachments"
 CFG
 export NTFY_CONFIG_FILE="$DATA/ntfy/server.yml"
+# ntfy legt user.db erst beim Server-Start an -> kurz vorstarten, dann User/Access setzen, dann beenden.
+ntfy serve --config "$DATA/ntfy/server.yml" >/dev/null 2>&1 &
+NTFY_PID=$!
+for _ in $(seq 1 15); do [ -f "$DATA/ntfy/user.db" ] && break; sleep 1; done
 if ! ntfy user list 2>/dev/null | grep -q "^user $NTFY_USER"; then
   NTFY_PASSWORD="$NTFY_PASSWORD" ntfy user add "$NTFY_USER" >/dev/null 2>&1 || true
 fi
 ntfy access "$NTFY_USER" "$NTFY_TOPIC" rw >/dev/null 2>&1 || true
+kill "$NTFY_PID" >/dev/null 2>&1 || true; wait "$NTFY_PID" 2>/dev/null || true
 
 # --- cron (im Container) ---
 cat > /etc/cron.d/kb <<'CRON'

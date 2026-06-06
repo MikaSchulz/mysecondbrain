@@ -26,16 +26,11 @@ cache-file: "/var/lib/ntfy/cache.db"
 CFG
 export NTFY_CONFIG_FILE=/etc/ntfy/server.yml
 
-# --- User + Access (Basic-Auth; ntfy-send.sh nutzt NTFY_USER/PW; kein Token nötig) ---
-if ! "$NTFY_BIN" user list 2>/dev/null | grep -q "^user $NUSER"; then
-  NTFY_PASSWORD="$NPW" "$NTFY_BIN" user add "$NUSER" || true
-fi
-"$NTFY_BIN" access "$NUSER" "$TOPIC" rw || true
-# NTFY_USER/PW + Topic in .env sichern (Token-Zeile entfernen, falls Altbestand)
+# NTFY_USER/PW in .env sichern
 grep -q '^export NTFY_USER='     "$ENVF" || echo "export NTFY_USER=\"$NUSER\"" >> "$ENVF"
 grep -q '^export NTFY_PASSWORD=' "$ENVF" || echo "export NTFY_PASSWORD=\"$NPW\"" >> "$ENVF"
 
-# --- systemd-Unit ---
+# --- systemd-Unit + Server starten (legt user.db an) ---
 cat > /etc/systemd/system/ntfy.service <<UNIT
 [Unit]
 Description=ntfy
@@ -49,6 +44,15 @@ WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
 systemctl enable --now ntfy
+# auf user.db warten (Server erstellt sie beim ersten Start) — User add geht erst danach
+for _ in $(seq 1 15); do [ -f /var/lib/ntfy/user.db ] && break; sleep 1; done
+
+# --- User + Access (Basic-Auth; kein Token nötig) ---
+if ! "$NTFY_BIN" user list 2>/dev/null | grep -q "^user $NUSER"; then
+  NTFY_PASSWORD="$NPW" "$NTFY_BIN" user add "$NUSER" || true
+fi
+"$NTFY_BIN" access "$NUSER" "$TOPIC" rw || true
+systemctl restart ntfy   # ACL/User sicher übernehmen
 sleep 2
 
 echo ">> ntfy :8080  User=$NUSER  Topic=$TOPIC  (Basic-Auth)"
