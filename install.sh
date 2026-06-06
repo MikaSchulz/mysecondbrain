@@ -11,7 +11,7 @@ mkdir -p "$KB" "$KB/.cache"
 # --- Basis-Pakete + Claude CLI ---
 if command -v apt-get >/dev/null; then
   apt-get update -y
-  apt-get install -y git python3 python3-pip python3-icalendar python3-dateparser \
+  apt-get install -y git python3 python3-pip \
     cron curl jq tesseract-ocr tesseract-ocr-deu poppler-utils ffmpeg restic \
     inotify-tools nodejs npm ca-certificates tzdata 2>/dev/null || \
     echo "WARN: einige Pakete fehlten (später nachinstallieren)"

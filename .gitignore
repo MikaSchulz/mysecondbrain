@@ -7,3 +7,4 @@ __pycache__/
 # Falls jemand versehentlich echte Secrets hier ablegt:
 opt-kb/.env
 .env
+.env.docker

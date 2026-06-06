@@ -8,8 +8,7 @@ unset ANTHROPIC_API_KEY                      # Schutz: garantiert Abo-Billing
 KB="${KB_HOME:-/opt/kb}"; VAULT="${VAULT:-/opt/kb/vault}"; DRY="${DRY_RUN:-0}"
 mkdir -p "$KB/.cache"
 
-notify(){ curl -sf -H "Authorization: Bearer ${NTFY_TOKEN:-}" -d "$1" \
-  "${NTFY_URL:-http://localhost:8080}/${NTFY_TOPIC:-kb}" >/dev/null 2>&1 || true; }
+notify(){ /opt/kb/ntfy-send.sh "$1"; }
 real_files(){ find "$1" -type f ! -name '.gitkeep' 2>/dev/null; }
 trap 'notify "kb-run ERR (run.log prüfen)"' ERR
 

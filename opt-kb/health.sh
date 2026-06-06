@@ -2,7 +2,7 @@
 # health.sh — prüft Radicale/ntfy (+ optional OpenWA) erreichbar; Restart-Versuch + ntfy-Alert. cron alle 15 min.
 set -euo pipefail
 source /opt/kb/.env 2>/dev/null || true
-notify(){ curl -sf -H "Authorization: Bearer ${NTFY_TOKEN:-}" -d "$1" "${NTFY_URL:-http://localhost:8080}/${NTFY_TOPIC:-kb}" >/dev/null 2>&1 || true; }
+notify(){ /opt/kb/ntfy-send.sh "$1"; }
 
 check(){ # name url systemd-unit
   local name="$1" url="$2" unit="$3"

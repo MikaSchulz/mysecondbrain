@@ -25,8 +25,7 @@ budget="${MONTH_BUDGET_USD:-18}"
 if awk "BEGIN{exit !($new + 0 >= 0.8*($budget + 0))}"; then
   warn="$KB/.cost-warned-$month"
   if [ ! -f "$warn" ]; then
-    curl -sf -H "Authorization: Bearer ${NTFY_TOKEN:-}" -d "kb: Monats-Kosten \$$new (>=80% von \$$budget)" \
-      "${NTFY_URL:-http://localhost:8080}/${NTFY_TOPIC:-kb}" >/dev/null 2>&1 || true
+    /opt/kb/ntfy-send.sh "kb: Monats-Kosten \$$new (>=80% von \$$budget)"
     touch "$warn"
   fi
 fi

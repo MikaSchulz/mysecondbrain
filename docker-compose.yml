@@ -1,0 +1,25 @@
+services:
+  mysecondbrain:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        WITH_WHISPER: "false"        # "true" = whisper.cpp im Image bauen (größer/länger)
+    image: mysecondbrain:latest
+    container_name: mysecondbrain
+    restart: unless-stopped
+    env_file: .env.docker
+    # Tailscale (optional): für Zugriff übers Tailnet. Ohne TUN läuft alles, nur Tailnet aus.
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun:/dev/net/tun
+    volumes:
+      - kb-data:/data
+    ports:
+      - "5232:5232"   # Radicale CalDAV
+      - "8080:8080"   # ntfy
+      - "8384:8384"   # Syncthing GUI
+
+volumes:
+  kb-data:

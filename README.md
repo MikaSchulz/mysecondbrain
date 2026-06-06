@@ -10,18 +10,31 @@ pflegt ein Markdown-Wiki, erzeugt Tasks/Termine → CalDAV (Radicale) + Push (nt
 
 Vollständiger Architektur-Plan: `~/.claude/plans/wobbly-wondering-nebula.md`.
 
+**Zwei Wege, gleicher App-Kern** (`opt-kb/` + `vault-seed/`): als **Proxmox-LXC** (systemd) oder als
+**Docker-Container** (supervisord). Nur die Packaging-Schicht unterscheidet sich.
+
 ## Layout dieses Repos
 
 ```
-opt-kb/        → wird nach /opt/kb/ kopiert (Skripte + .env.template)
-vault-seed/    → wird nach /opt/kb/vault/ kopiert (initialer Vault, dann git init)
-install.sh     → Setup auf dem NUC (Dirs, Kopie, git, cron, systemd-watcher)
-setup/         → Dienst-Setup (Tailscale/Radicale/ntfy/whisper/Syncthing) — siehe setup/README.md
+opt-kb/        → wird nach /opt/kb/ kopiert (Skripte + .env.template)  [Kern]
+vault-seed/    → initialer Vault (raw/wiki/index/log/tasks, CLAUDE.md, Skills)  [Kern]
+setup/         → Dienst-Setup für LXC (Tailscale/Radicale/ntfy/whisper/Syncthing)
+install.sh     → LXC: Dirs, Kopie, git, cron, systemd-watcher
+proxmox/       → install-lxc.sh: One-Shot-LXC vom Proxmox-Host
+docker/        → Dockerfile + entrypoint + supervisord  (Docker-Variante)
+docker-compose.yml → Docker-Start
 selftest.sh    → verifiziert die deterministische Pipeline lokal (kein claude/Netz nötig)
 ```
 
-Tailnet: **eigener Tailscale-Node im kb-LXC** (`setup/10-tailscale.sh`) → `kb.<tailnet>.ts.net`.
-Mehrere Nodes im selben Tailnet sind ok (ein vorhandener TS-Container an anderer Stelle stört nicht).
+## Schnellstart: Docker
+
+```bash
+git clone git@github.com:MikaSchulz/mysecondbrain.git && cd mysecondbrain
+cp .env.docker.example .env.docker     # ausfüllen: CLAUDE_CODE_OAUTH_TOKEN, PWs, optional TS_AUTHKEY
+docker compose up -d --build
+docker compose exec mysecondbrain kb-doctor
+```
+Details: **docker/README.md**.
 
 ## Schnellstart: Proxmox-LXC (empfohlen, out of the box)
 
