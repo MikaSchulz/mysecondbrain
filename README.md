@@ -8,8 +8,6 @@ Lokaler `claude -p` (headless, **über Pro-Abo via OAuth-Token**) verarbeitet ne
 pflegt ein Markdown-Wiki, erzeugt Tasks/Termine → CalDAV (Radicale) + Push (ntfy).
 **LLM = eine Stufe, alles Mechanische = deterministische Skripte.**
 
-Vollständiger Architektur-Plan: `~/.claude/plans/wobbly-wondering-nebula.md`.
-
 **Zwei Wege, gleicher App-Kern** (`opt-kb/` + `vault-seed/`): als **Proxmox-LXC** (systemd) oder als
 **Docker-Container** (supervisord). Nur die Packaging-Schicht unterscheidet sich.
 

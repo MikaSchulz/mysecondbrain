@@ -64,7 +64,6 @@ COPY vault-seed/ /opt/kb/vault-seed/
 COPY setup/ /opt/kb/setup/
 COPY openwa/ /opt/kb/openwa/
 RUN chmod +x /opt/kb/*.sh /opt/kb/gen_ics.py /opt/kb/kb-ask /opt/kb/kb-ingest /opt/kb/kb-doctor /opt/kb/configure.sh \
-    && cp /opt/kb/.env.template /opt/kb/.env.template.bak \
     && ln -sf /opt/kb/kb-ask /usr/local/bin/kb-ask \
     && ln -sf /opt/kb/kb-ingest /usr/local/bin/kb-ingest \
     && ln -sf /opt/kb/kb-doctor /usr/local/bin/kb-doctor \
