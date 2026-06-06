@@ -8,6 +8,5 @@ Aktive Tasks/Termine. Format pro Zeile:
 
 ## Offen
 
-<!-- z.B.:
-- [ ] Beispieltermin @uid(a1b2c3) @due(2026-06-10 14:00) @alarm(15m) #demo
--->
+> Format-Beispiel (KEIN echter Task — Zeile beginnt mit `>`, wird ignoriert):
+> `- [ ] Beispieltermin @uid(a1b2c3) @due(2026-06-10 14:00) @alarm(15m) #demo`

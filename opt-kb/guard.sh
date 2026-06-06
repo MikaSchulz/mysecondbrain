@@ -23,7 +23,7 @@ if awk "BEGIN{exit !($spent + 0 >= ${MONTH_BUDGET_USD:-18} + 0)}"; then
   exit 1
 fi
 # Tages-Cap
-runs=$(wc -l < "$KB/.runs-$(date +%F)" 2>/dev/null || echo 0)
+rf="$KB/.runs-$(date +%F)"; runs=0; [ -f "$rf" ] && runs=$(wc -l < "$rf")
 [ "$runs" -ge "${MAX_RUNS_DAY:-10}" ] && exit 1
 
 # --- Timing (urgent bypasst) ---

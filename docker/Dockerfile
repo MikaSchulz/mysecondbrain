@@ -18,21 +18,31 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm install -g @anthropic-ai/claude-code \
     && rm -rf /var/lib/apt/lists/* /root/.npm
 
-# --- ntfy ---
-RUN install -d /etc/apt/keyrings \
-    && curl -fsSL https://archive.heckel.io/apt/pubkey.txt | gpg --dearmor -o /etc/apt/keyrings/ntfy.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/ntfy.gpg] https://archive.heckel.io/apt debian main" > /etc/apt/sources.list.d/ntfy.list \
-    && apt-get update && apt-get install -y --no-install-recommends ntfy && rm -rf /var/lib/apt/lists/*
+# --- ntfy (statisches Binary, neueste Release) ---
+RUN set -eux; \
+    V=$(curl -fsSL https://api.github.com/repos/binwiederhier/ntfy/releases/latest | jq -r .tag_name | sed 's/^v//'); \
+    curl -fsSL "https://github.com/binwiederhier/ntfy/releases/download/v${V}/ntfy_${V}_linux_amd64.tar.gz" -o /tmp/ntfy.tgz; \
+    tar -C /tmp -xzf /tmp/ntfy.tgz; \
+    install -m0755 "/tmp/ntfy_${V}_linux_amd64/ntfy" /usr/bin/ntfy; \
+    rm -rf /tmp/ntfy*
 
-# --- Syncthing ---
-RUN curl -fsSL https://syncthing.net/release-key.gpg -o /etc/apt/keyrings/syncthing.gpg \
-    && echo "deb [signed-by=/etc/apt/keyrings/syncthing.gpg] https://apt.syncthing.net/ syncthing stable" > /etc/apt/sources.list.d/syncthing.list \
-    && apt-get update && apt-get install -y --no-install-recommends syncthing && rm -rf /var/lib/apt/lists/*
+# --- Syncthing (statisches Binary) ---
+RUN set -eux; \
+    V=$(curl -fsSL https://api.github.com/repos/syncthing/syncthing/releases/latest | jq -r .tag_name | sed 's/^v//'); \
+    curl -fsSL "https://github.com/syncthing/syncthing/releases/download/v${V}/syncthing-linux-amd64-v${V}.tar.gz" -o /tmp/st.tgz; \
+    tar -C /tmp -xzf /tmp/st.tgz; \
+    install -m0755 "/tmp/syncthing-linux-amd64-v${V}/syncthing" /usr/bin/syncthing; \
+    rm -rf /tmp/st* /tmp/syncthing-*
 
-# --- Tailscale ---
-RUN curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg -o /etc/apt/keyrings/tailscale.gpg \
-    && curl -fsSL https://pkgs.tailscale.com/stable/debian/bookworm.tailscale-keyring.list -o /etc/apt/sources.list.d/tailscale.list \
-    && apt-get update && apt-get install -y --no-install-recommends tailscale && rm -rf /var/lib/apt/lists/*
+# --- Tailscale (statische Binaries, tailscale-CDN) ---
+RUN set -eux; \
+    TB=$(curl -fsSL "https://pkgs.tailscale.com/stable/?mode=json" | jq -r .Tarballs.amd64); \
+    curl -fsSL "https://pkgs.tailscale.com/stable/${TB}" -o /tmp/ts.tgz; \
+    tar -C /tmp -xzf /tmp/ts.tgz; \
+    D=$(basename "$TB" .tgz); \
+    install -m0755 "/tmp/${D}/tailscale" /usr/bin/tailscale; \
+    install -m0755 "/tmp/${D}/tailscaled" /usr/bin/tailscaled; \
+    rm -rf /tmp/ts* /tmp/tailscale_*
 
 # --- Radicale (venv) ---
 RUN python3 -m venv /opt/radicale-venv \

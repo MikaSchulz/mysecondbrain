@@ -6,11 +6,18 @@ source "$ENVF" 2>/dev/null || true
 ok(){ printf '  \033[32m✓\033[0m %s\n' "$1"; }
 no(){ printf '  \033[31m✗\033[0m %s\n' "$1"; }
 wn(){ printf '  \033[33m!\033[0m %s\n' "$1"; }
+# Dienst aktiv? systemd ODER supervisord ODER Prozess (LXC vs Docker)
+svc_active(){ # $1=unit/program $2=pgrep-pattern
+  systemctl is-active --quiet "$1" 2>/dev/null && return 0
+  command -v supervisorctl >/dev/null 2>&1 && supervisorctl status "$1" 2>/dev/null | grep -q RUNNING && return 0
+  [ -n "${2:-}" ] && pgrep -f "$2" >/dev/null 2>&1 && return 0
+  return 1
+}
 
 echo "==== kb-doctor ===="
 
 echo "[Auth / Billing]"
-[ -f "$ENVF" ] && ok ".env vorhanden ($(stat -c %a "$ENVF"))" || no ".env fehlt"
+[ -f "$ENVF" ] && ok ".env vorhanden ($(stat -Lc %a "$ENVF"))" || no ".env fehlt"
 if [ -n "${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then ok "CLAUDE_CODE_OAUTH_TOKEN gesetzt (Abo)"; else no "CLAUDE_CODE_OAUTH_TOKEN fehlt -> claude setup-token"; fi
 if grep -q '^export ANTHROPIC_API_KEY=' "$ENVF" 2>/dev/null || [ -n "${ANTHROPIC_API_KEY:-}" ]; then
   no "ANTHROPIC_API_KEY GESETZT -> API-Billing-Gefahr! entfernen"; else ok "kein ANTHROPIC_API_KEY (Abo-Billing sicher)"; fi
@@ -27,14 +34,16 @@ curl -sf -m4 -u "${RADICALE_USER:-kb}:${RADICALE_PW:-}" "${RADICALE_URL:-http://
   && ok "Radicale erreichbar (:5232)" || no "Radicale nicht erreichbar"
 curl -sf -m4 "${NTFY_URL:-http://localhost:8080}/v1/health" -o /dev/null 2>/dev/null \
   && ok "ntfy erreichbar (:8080)" || no "ntfy nicht erreichbar"
-[ -n "${NTFY_TOKEN:-}" ] && [ "${NTFY_TOKEN}" != "tk_change_me" ] && ok "NTFY_TOKEN gesetzt" || no "NTFY_TOKEN fehlt/Default"
+if { [ -n "${NTFY_TOKEN:-}" ] && [ "${NTFY_TOKEN}" != "tk_change_me" ]; } then ok "ntfy-Auth: Token"
+elif [ -n "${NTFY_USER:-}" ]; then ok "ntfy-Auth: Basic ($NTFY_USER)"
+else no "ntfy-Auth fehlt (NTFY_TOKEN oder NTFY_USER/PW)"; fi
 if [ -n "${WHISPER_BIN:-}" ] && [ -x "${WHISPER_BIN:-/x}" ]; then ok "whisper: $WHISPER_BIN"; else wn "whisper nicht gebaut (Phase 2, Voice deaktiviert)"; fi
-systemctl is-active --quiet syncthing@root 2>/dev/null && ok "Syncthing aktiv" || wn "Syncthing nicht aktiv"
-systemctl is-active --quiet kb-openwa 2>/dev/null && ok "OpenWA aktiv" || wn "OpenWA nicht aktiv (WhatsApp optional)"
+svc_active "syncthing" "syncthing serve" && ok "Syncthing aktiv" || wn "Syncthing nicht aktiv"
+svc_active "kb-openwa" "openwa\|listener.js" && ok "OpenWA aktiv" || wn "OpenWA nicht aktiv (WhatsApp optional)"
 
 echo "[Automation]"
-crontab -l 2>/dev/null | grep -q '/opt/kb/run.sh' && ok "cron run.sh installiert" || no "cron run.sh fehlt -> install.sh"
-systemctl is-active --quiet kb-watch 2>/dev/null && ok "kb-watch (urgent) aktiv" || wn "kb-watch nicht aktiv"
+if crontab -l 2>/dev/null | grep -q '/opt/kb/run.sh' || grep -rq '/opt/kb/run.sh' /etc/cron.d/ 2>/dev/null; then ok "cron run.sh installiert"; else no "cron run.sh fehlt -> install.sh"; fi
+svc_active "kb-watch" "watch-raw.sh" && ok "kb-watch (urgent) aktiv" || wn "kb-watch nicht aktiv"
 [ -d "$VAULT/.git" ] && ok "Vault git-Repo" || no "Vault kein git-Repo -> install.sh"
 
 echo "[Kosten]"

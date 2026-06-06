@@ -15,6 +15,18 @@ extract_uid(){ # aus einer Zeile die uid ziehen (@uid(xxx) oder bare token)
   if [[ "$1" =~ @uid\(([^\)]+)\) ]]; then echo "${BASH_REMATCH[1]}"; else echo "$1" | tr -d '[:space:]'; fi
 }
 
+# Radicale legt Collections NICHT per PUT an -> einmal MKCALENDAR (idempotent; bei Existenz Fehler ignoriert).
+ensure_collection(){
+  curl -sf "${AUTH[@]}" -X MKCALENDAR -H "Content-Type: application/xml" --data \
+'<?xml version="1.0" encoding="utf-8"?>
+<C:mkcalendar xmlns:D="DAV:" xmlns:C="urn:ietf:params:xml:caldav">
+ <D:set><D:prop>
+  <D:displayname>'"${RADICALE_CALENDAR:-routine}"'</D:displayname>
+  <C:supported-calendar-component-set><C:comp name="VEVENT"/></C:supported-calendar-component-set>
+ </D:prop></D:set>
+</C:mkcalendar>' "$BASE/" >/dev/null 2>&1 || true
+}
+
 # --- 1) Absagen ---
 if [ -s "$CANCEL" ]; then
   while IFS= read -r line; do
@@ -30,14 +42,16 @@ if [ -s "$CANCEL" ]; then
 fi
 
 # --- 2) PUT geänderte ---
+pending=0; for f in "$EVT"/*.ics; do cmp -s "$f" "$CACHE/$(basename "$f")" 2>/dev/null || pending=1; done
+[ "$pending" = 1 ] && ensure_collection      # nur wenn was zu PUTten ist
 for f in "$EVT"/*.ics; do
   name=$(basename "$f")
   if ! cmp -s "$f" "$CACHE/$name" 2>/dev/null; then
-    if curl -sf "${AUTH[@]}" -H "Content-Type: text/calendar; charset=utf-8" -T "$f" "$BASE/$name" >/dev/null 2>&1; then
-      cp -f "$f" "$CACHE/$name"; echo "sync-caldav: PUT $name"
-    else
-      echo "sync-caldav: PUT FEHLER $name" >&2
-    fi
+    code=$(curl -s -o /dev/null -w '%{http_code}' "${AUTH[@]}" -H "Content-Type: text/calendar; charset=utf-8" -T "$f" "$BASE/$name")
+    case "$code" in
+      2*) cp -f "$f" "$CACHE/$name"; echo "sync-caldav: PUT $name ($code)";;
+      *)  echo "sync-caldav: PUT FEHLER $name (HTTP $code)" >&2;;
+    esac
   fi
 done
 exit 0
